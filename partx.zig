@@ -2,6 +2,8 @@ const std = @import("std");
 const tookenizeScalar = std.mem.tokenizeScalar;
 const tokenizeAny = std.mem.tokenizeAny;
 const parseInt = std.fmt.parseInt;
+const info = std.log.info;
+const debug = std.log.debug;
 
 pub const std_options = .{ .log_level = .debug };
 
