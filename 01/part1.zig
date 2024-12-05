@@ -1,6 +1,6 @@
 const std = @import("std");
 const tokenizeAny = std.mem.tokenizeAny;
-const parseInt = std.fmt.parseInt;
+const ArrayList = std.ArrayList;
 
 pub const std_options = .{ .log_level = .info };
 
@@ -13,30 +13,39 @@ pub fn main() !void {
     }
 
     std.log.info("Sample Answer: {d}", .{try solve("sampleinput.txt", allocator)});
+
     std.log.info("Answer: {d}", .{try solve("input.txt", allocator)});
 }
 
-fn solve(comptime filename: []const u8, allocator: std.mem.Allocator) !isize {
+fn solve(comptime filename: []const u8, allocator: std.mem.Allocator) !usize {
     const file = @embedFile(filename);
-    _ = allocator;
+    var array1 = ArrayList(isize).init(allocator);
+    defer array1.deinit();
+    var array2 = ArrayList(isize).init(allocator);
+    defer array2.deinit();
+
     var lines = tokenizeAny(u8, file, "\n");
-    var output: isize = 0;
-    lineloop: while (lines.next()) |line| {
-        std.log.debug("", .{});
+    while (lines.next()) |line| {
         var numbers = tokenizeAny(u8, line, " ");
-        var last_diff: isize = 0;
-        var last_number: isize = try parseInt(isize, numbers.next().?, 10);
+        var index: usize = 0;
         while (numbers.next()) |number| {
-            const parsed_number = try parseInt(isize, number, 10);
-            std.log.debug("nubmer: {d}, last_number: {d}", .{ parsed_number, last_number });
-            const diff: isize = parsed_number - last_number;
-            if (@abs(diff) < 1 or @abs(diff) > 3 or (last_diff < 0 and diff > 0) or (last_diff > 0 and diff < 0)) {
-                continue :lineloop;
+            if (index == 0) {
+                try array1.append(try std.fmt.parseInt(isize, number, 10));
+            } else {
+                try array2.append(try std.fmt.parseInt(isize, number, 10));
             }
-            last_diff = diff;
-            last_number = parsed_number;
+            index += 1;
         }
-        output += 1;
+    }
+    std.mem.sort(isize, array1.items, {}, comptime std.sort.asc(isize));
+    std.mem.sort(isize, array2.items, {}, comptime std.sort.asc(isize));
+
+    std.log.debug("array1: {any}\nlen: {d}", .{ array1.items, array1.items.len });
+    std.log.debug("array2: {any}\nlen: {d}", .{ array2.items, array2.items.len });
+
+    var output: usize = 0;
+    for (0..array1.items.len) |index| {
+        output += @intCast(@abs(array2.items[index] - array1.items[index]));
     }
     return output;
 }

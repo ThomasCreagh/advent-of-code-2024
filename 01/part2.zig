@@ -1,9 +1,10 @@
 const std = @import("std");
 const tokenizeAny = std.mem.tokenizeAny;
-const Arraylist = std.ArrayList;
+const AutoHashMap = std.AutoHashMap;
+const ArrayList = std.ArrayList;
 const parseInt = std.fmt.parseInt;
 
-pub const std_options = .{ .log_level = .debug };
+pub const std_options = .{ .log_level = .info };
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -13,57 +14,29 @@ pub fn main() !void {
         if (deinit_status == .leak) std.testing.expect(false) catch @panic("TEST FAIL");
     }
 
-    std.log.info("Toms Sample Answer: {d}", .{try solve("tomssampleinput.txt", allocator)});
     std.log.info("Sample Answer: {d}", .{try solve("sampleinput.txt", allocator)});
     std.log.info("Answer: {d}", .{try solve("input.txt", allocator)});
 }
 
-fn solve(comptime filename: []const u8, allocator: std.mem.Allocator) !isize {
+fn solve(comptime filename: []const u8, allocator: std.mem.Allocator) !usize {
     const file = @embedFile(filename);
+    var number_card = AutoHashMap(usize, usize).init(allocator);
+    defer number_card.deinit();
+    var left_numbers = ArrayList(usize).init(allocator);
+    defer left_numbers.deinit();
+
     var lines = tokenizeAny(u8, file, "\n");
-    var output: isize = 0;
-
-    var line_array = Arraylist(isize).init(allocator);
-    defer line_array.deinit();
-
-    while (lines.next()) |line| { // lineloop:
+    while (lines.next()) |line| {
         var numbers = tokenizeAny(u8, line, " ");
-        line_array.clearAndFree();
-        while (numbers.next()) |number| {
-            try line_array.append(try parseInt(isize, number, 10));
-        }
-        if (!valid(line_array)) {
-            for (0..line_array.items.len) |index| {
-                if (try validate_without(line_array, index)) {
-                    output += 1;
-                    break;
-                }
-            }
-        } else {
-            output += 1;
-        }
+        try left_numbers.append(try parseInt(usize, numbers.next().?, 10));
+        const right_number = try parseInt(usize, numbers.next().?, 10);
+        try number_card.put(right_number, (number_card.get(right_number) orelse 0) + 1);
     }
+
+    var output: usize = 0;
+    for (left_numbers.items) |key| {
+        output += key * (number_card.get(key) orelse 0);
+    }
+
     return output;
-}
-
-fn validate_without(array: Arraylist(isize), index: usize) !bool {
-    var array_copy = try array.clone();
-    defer array_copy.deinit();
-    _ = array_copy.orderedRemove(index);
-
-    return valid(array_copy);
-}
-
-fn valid(array: Arraylist(isize)) bool {
-    var last = array.items[0];
-    var last_diff: isize = 0;
-    for (1..array.items.len) |index| {
-        const diff = last - array.items[index];
-        if (@abs(diff) < 1 or @abs(diff) > 3 or (last_diff < 0 and diff > 0) or (last_diff > 0 and diff < 0)) {
-            return false;
-        }
-        last = array.items[index];
-        last_diff = diff;
-    }
-    return true;
 }
