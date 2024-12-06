@@ -41,17 +41,13 @@ fn solve(comptime filename: []const u8, allocator: std.mem.Allocator) !usize {
     for (0..size - 2) |i| {
         for (0..size - 2) |j| {
             if (matrix.items[i + 1].items[j + 1] == 'A') {
-                const tl = matrix.items[i].items[j];
-                const tr = matrix.items[i].items[j + 2];
-                const bl = matrix.items[i + 2].items[j];
-                const br = matrix.items[i + 2].items[j + 2];
-                if (tl == 'M' and tr == 'M' and br == 'S' and bl == 'S') {
-                    output += 1;
-                } else if (tl == 'S' and tr == 'M' and br == 'M' and bl == 'S') {
-                    output += 1;
-                } else if (tl == 'S' and tr == 'S' and br == 'M' and bl == 'M') {
-                    output += 1;
-                } else if (tl == 'M' and tr == 'S' and br == 'S' and bl == 'M') {
+                if (@as(u16, @intCast(matrix.items[i].items[j])) + // top left
+                    @as(u16, @intCast(matrix.items[i].items[j + 2])) + // top right
+                    @as(u16, @intCast(matrix.items[i + 2].items[j])) + // bottom left
+                    @as(u16, @intCast(matrix.items[i + 2].items[j + 2])) == // bottom right
+                    @as(u16, @intCast(('M' * 2) + ('S' * 2))) and
+                    matrix.items[i].items[j] != matrix.items[i + 2].items[j + 2])
+                {
                     output += 1;
                 }
             }
