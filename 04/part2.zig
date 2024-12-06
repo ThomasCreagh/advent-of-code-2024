@@ -37,58 +37,25 @@ fn solve(comptime filename: []const u8, allocator: std.mem.Allocator) !usize {
         try matrix.append(new_line);
     }
     var output: usize = 0;
-    // horizontal
-    for (matrix.items) |list| {
-        output += amount(list);
-    }
-    debug("after hor: {d}", .{output});
-    // vertical
-    for (0..matrix.items[0].items.len) |index| {
-        var temp_list = ArrayList(u8).init(allocator);
-        defer temp_list.deinit();
-        for (matrix.items) |list| {
-            try temp_list.append(list.items[index]);
-        }
-        output += amount(temp_list);
-    }
-    debug("after ver: {d}", .{output});
-    // diagonal
     const size = matrix.items.len;
-
-    for (0..size) |loop_amount| {
-        var temp_list_1 = ArrayList(u8).init(allocator);
-        defer temp_list_1.deinit();
-
-        var temp_list_2 = ArrayList(u8).init(allocator);
-        defer temp_list_2.deinit();
-
-        for (0..loop_amount + 1) |index| {
-            try temp_list_1.append(matrix.items[index].items[loop_amount - index]);
-            try temp_list_2.append(matrix.items[index].items[(size - loop_amount - 1) + index]);
+    for (0..size - 2) |i| {
+        for (0..size - 2) |j| {
+            if (matrix.items[i + 1].items[j + 1] == 'A') {
+                const tl = matrix.items[i].items[j];
+                const tr = matrix.items[i].items[j + 2];
+                const bl = matrix.items[i + 2].items[j];
+                const br = matrix.items[i + 2].items[j + 2];
+                if (tl == 'M' and tr == 'M' and br == 'S' and bl == 'S') {
+                    output += 1;
+                } else if (tl == 'S' and tr == 'M' and br == 'M' and bl == 'S') {
+                    output += 1;
+                } else if (tl == 'S' and tr == 'S' and br == 'M' and bl == 'M') {
+                    output += 1;
+                } else if (tl == 'M' and tr == 'S' and br == 'S' and bl == 'M') {
+                    output += 1;
+                }
+            }
         }
-        output += amount(temp_list_1);
-        output += amount(temp_list_2);
     }
-
-    for (1..size) |loop_neg| {
-        const loop_amount = size - loop_neg - 1;
-        var temp_list_1 = ArrayList(u8).init(allocator);
-        defer temp_list_1.deinit();
-
-        var temp_list_2 = ArrayList(u8).init(allocator);
-        defer temp_list_2.deinit();
-
-        for (0..loop_amount + 1) |index| {
-            try temp_list_1.append(matrix.items[(size - loop_amount - 1) + index].items[(size - 1) - index]);
-            try temp_list_2.append(matrix.items[(size - loop_amount - 1) + index].items[index]);
-        }
-        output += amount(temp_list_1);
-        output += amount(temp_list_2);
-    }
-    debug("after dig: {d}", .{output});
     return output;
-}
-
-fn amount(array: ArrayList(u8)) usize {
-    return count(u8, array.items, "XMAS") + count(u8, array.items, "SAMX");
 }
