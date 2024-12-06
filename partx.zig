@@ -1,5 +1,5 @@
 const std = @import("std");
-const tookenizeScalar = std.mem.tokenizeScalar;
+const tokenizeScalar = std.mem.tokenizeScalar;
 const tokenizeAny = std.mem.tokenizeAny;
 const parseInt = std.fmt.parseInt;
 const info = std.log.info;
@@ -22,7 +22,7 @@ pub fn main() !void {
 fn solve(comptime filename: []const u8, allocator: std.mem.Allocator) !usize {
     const file = @embedFile(filename);
     _ = allocator;
-    var lines = tookenizeScalar(u8, file, '\n');
+    var lines = tokenizeScalar(u8, file, '\n');
     while (lines.next()) |line| {
         var numbers = tokenizeAny(u8, line, " ");
         while (numbers.next()) |number| {
