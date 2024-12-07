@@ -56,30 +56,40 @@ fn solve(comptime filename: []const u8, allocator: std.mem.Allocator) !usize {
         while (numbers.next()) |number| {
             try array.append(try parseInt(u8, number, 10));
         }
-        var is_correct = true;
-        for (array.items, 0..) |item, key_index| {
-            const value_search = rules.get(item);
-            if (value_search) |value| {
-                for (value.items) |value_item| {
-                    const array_index = std.mem.indexOfScalar(u8, array.items, value_item);
-                    if (array_index) |value_index| {
-                        if (key_index > value_index) {
-                            is_correct = false;
-                            break;
+        const was_incorrect = !valid(array, rules);
+        while (!valid(array, rules)) {
+            for (array.items, 0..) |item, key_index| {
+                const value_search = rules.get(item);
+                if (value_search) |value| {
+                    for (value.items) |value_item| {
+                        const array_index = std.mem.indexOfScalar(u8, array.items, value_item);
+                        if (array_index) |value_index| {
+                            if (key_index > value_index) {}
                         }
                     }
                 }
             }
         }
-        if (is_correct) {
+        if (was_incorrect) {
             output += array.items[array.items.len >> 1];
-            // debug("new correct value: {d}", .{array.items[array.items.len >> 1]});
-            // debug("from line: {any}", .{array.items});
-        } else {
-            debug("false line: {any}", .{array.items});
         }
     }
     return output;
 }
 
-fn valid(array: std.ArrayList(u8), rules: std.AutoHashMap(u8, std.ArrayList(u8))) bool {}
+fn valid(array: std.ArrayList(u8), rules: std.AutoHashMap(u8, std.ArrayList(u8))) bool {
+    for (array.items, 0..) |item, key_index| {
+        const value_search = rules.get(item);
+        if (value_search) |value| {
+            for (value.items) |value_item| {
+                const array_index = std.mem.indexOfScalar(u8, array.items, value_item);
+                if (array_index) |value_index| {
+                    if (key_index > value_index) {
+                        return false;
+                    }
+                }
+            }
+        }
+    }
+    return true;
+}
