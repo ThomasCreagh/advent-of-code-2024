@@ -64,7 +64,9 @@ fn solve(comptime filename: []const u8, allocator: std.mem.Allocator) !usize {
                     for (value.items) |value_item| {
                         const array_index = std.mem.indexOfScalar(u8, array.items, value_item);
                         if (array_index) |value_index| {
-                            if (key_index > value_index) {}
+                            if (key_index > value_index) {
+                                std.mem.swap(u8, array[key_index], array[value_index]);
+                            }
                         }
                     }
                 }
