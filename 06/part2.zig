@@ -5,7 +5,7 @@ const tokenizeScalar = std.mem.tokenizeScalar;
 const info = std.log.info;
 const debug = std.log.debug;
 
-pub const std_options = .{ .log_level = .debug };
+pub const std_options = .{ .log_level = .info };
 
 const Direction = enum { north, south, east, west };
 const Cords = struct { x: u16, y: u16 };
@@ -18,7 +18,7 @@ pub fn main() !void {
         if (deinit_status == .leak) std.testing.expect(false) catch @panic("TEST FAIL");
     }
 
-    // std.log.info("Sample Answer: {d}", .{try solve("sampleinput.txt", allocator)});
+    std.log.info("Sample Answer: {d}", .{try solve("sampleinput.txt", allocator)});
     std.log.info("Answer: {d}", .{try solve("input.txt", allocator)});
 }
 
@@ -89,15 +89,12 @@ fn is_loop(
     }
 
     while (true) {
-        // debug("guard x={d}, y={d}", .{ guard_cords.x, guard_cords.y });
-        // var check = false;
         switch (guard_direction) {
             .north => {
                 if (guard_cords.y == 0) break;
                 if (map.items[guard_cords.y - 1].items[guard_cords.x] == '#') {
                     guard_direction = Direction.east;
                 } else if (guard_cords.y - 1 == placement.y and guard_cords.x == placement.x) {
-                    //     check = true;
                     guard_direction = Direction.east;
                 } else guard_cords.y -= 1;
             },
@@ -106,7 +103,6 @@ fn is_loop(
                 if (map.items[guard_cords.y + 1].items[guard_cords.x] == '#') {
                     guard_direction = Direction.west;
                 } else if (guard_cords.y + 1 == placement.y and guard_cords.x == placement.x) {
-                    //     check = true;
                     guard_direction = Direction.west;
                 } else guard_cords.y += 1;
             },
@@ -115,7 +111,6 @@ fn is_loop(
                 if (map.items[guard_cords.y].items[guard_cords.x + 1] == '#') {
                     guard_direction = Direction.south;
                 } else if (guard_cords.y == placement.y and guard_cords.x + 1 == placement.x) {
-                    //     check = true;
                     guard_direction = Direction.south;
                 } else guard_cords.x += 1;
             },
@@ -124,12 +119,10 @@ fn is_loop(
                 if (map.items[guard_cords.y].items[guard_cords.x - 1] == '#') {
                     guard_direction = Direction.north;
                 } else if (guard_cords.y == placement.y and guard_cords.x - 1 == placement.x) {
-                    //     check = true;
                     guard_direction = Direction.north;
                 } else guard_cords.x -= 1;
             },
         }
-        // if (check) {
         if (all_cords.contains(guard_cords)) {
             for (all_cords.get(guard_cords).?.items) |dir| {
                 if (dir == guard_direction) return true;
@@ -140,7 +133,6 @@ fn is_loop(
             try new_array.append(guard_direction);
             try all_cords.put(guard_cords, new_array);
         }
-        // }
     }
     return false;
 }
