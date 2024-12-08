@@ -5,7 +5,7 @@ const tokenizeScalar = std.mem.tokenizeScalar;
 const info = std.log.info;
 const debug = std.log.debug;
 
-pub const std_options = .{ .log_level = .info };
+pub const std_options = .{ .log_level = .debug };
 
 const Direction = enum { north, south, east, west };
 const Cords = struct { x: u16, y: u16 };
@@ -18,7 +18,7 @@ pub fn main() !void {
         if (deinit_status == .leak) std.testing.expect(false) catch @panic("TEST FAIL");
     }
 
-    std.log.info("Sample Answer: {d}", .{try solve("sampleinput.txt", allocator)});
+    // std.log.info("Sample Answer: {d}", .{try solve("sampleinput.txt", allocator)});
     std.log.info("Answer: {d}", .{try solve("input.txt", allocator)});
 }
 
@@ -52,9 +52,14 @@ fn solve(comptime filename: []const u8, allocator: std.mem.Allocator) !usize {
 
     // trying by replacing all the '.' with an item that blocks the guard
     for (0..map.items.len) |row_index| {
+        debug("Trying row {d}", .{row_index});
         for (0..map.items[0].items.len) |col_index| {
+            debug("\tTrying col {d}, output: {d}", .{ col_index, output });
             if (map.items[row_index].items[col_index] == '.') {
-                if (is_loop(map, Cords{ .x = @as(u16, @intCast(col_index)), .y = @as(u16, @intCast(row_index)) }, guard_cords)) {
+                if (try is_loop(map, Cords{
+                    .x = @as(u16, @intCast(col_index)),
+                    .y = @as(u16, @intCast(row_index)),
+                }, guard_cords, allocator)) {
                     output += 1;
                 }
             }
@@ -65,25 +70,35 @@ fn solve(comptime filename: []const u8, allocator: std.mem.Allocator) !usize {
 }
 
 // this is to check if the guard cycle loops given the cords where the item block would be
-fn is_loop(map: ArrayList(ArrayList(u8)), placement: Cords, original_guard_cords: Cords) bool {
+fn is_loop(
+    map: ArrayList(ArrayList(u8)),
+    placement: Cords,
+    original_guard_cords: Cords,
+    allocator: std.mem.Allocator,
+) !bool {
     var guard_cords = original_guard_cords;
     var guard_direction = Direction.north;
-    var first_touch = true;
-    var first_touch_direction: Direction = undefined;
+
+    var all_cords = AutoHashMap(Cords, ArrayList(Direction)).init(allocator);
+    defer {
+        var val_iter = all_cords.valueIterator();
+        while (val_iter.next()) |iter| {
+            iter.deinit();
+        }
+        all_cords.deinit();
+    }
+
     while (true) {
+        // debug("guard x={d}, y={d}", .{ guard_cords.x, guard_cords.y });
+        // var check = false;
         switch (guard_direction) {
             .north => {
                 if (guard_cords.y == 0) break;
                 if (map.items[guard_cords.y - 1].items[guard_cords.x] == '#') {
                     guard_direction = Direction.east;
                 } else if (guard_cords.y - 1 == placement.y and guard_cords.x == placement.x) {
-                    if (first_touch) {
-                        first_touch_direction = guard_direction;
-                        guard_direction = Direction.east;
-                        first_touch = false;
-                    } else if (guard_direction == first_touch_direction) {
-                        return true;
-                    }
+                    //     check = true;
+                    guard_direction = Direction.east;
                 } else guard_cords.y -= 1;
             },
             .south => {
@@ -91,13 +106,8 @@ fn is_loop(map: ArrayList(ArrayList(u8)), placement: Cords, original_guard_cords
                 if (map.items[guard_cords.y + 1].items[guard_cords.x] == '#') {
                     guard_direction = Direction.west;
                 } else if (guard_cords.y + 1 == placement.y and guard_cords.x == placement.x) {
-                    if (first_touch) {
-                        first_touch_direction = guard_direction;
-                        guard_direction = Direction.west;
-                        first_touch = false;
-                    } else if (guard_direction == first_touch_direction) {
-                        return true;
-                    }
+                    //     check = true;
+                    guard_direction = Direction.west;
                 } else guard_cords.y += 1;
             },
             .east => {
@@ -105,13 +115,8 @@ fn is_loop(map: ArrayList(ArrayList(u8)), placement: Cords, original_guard_cords
                 if (map.items[guard_cords.y].items[guard_cords.x + 1] == '#') {
                     guard_direction = Direction.south;
                 } else if (guard_cords.y == placement.y and guard_cords.x + 1 == placement.x) {
-                    if (first_touch) {
-                        first_touch_direction = guard_direction;
-                        guard_direction = Direction.south;
-                        first_touch = false;
-                    } else if (guard_direction == first_touch_direction) {
-                        return true;
-                    }
+                    //     check = true;
+                    guard_direction = Direction.south;
                 } else guard_cords.x += 1;
             },
             .west => {
@@ -119,16 +124,23 @@ fn is_loop(map: ArrayList(ArrayList(u8)), placement: Cords, original_guard_cords
                 if (map.items[guard_cords.y].items[guard_cords.x - 1] == '#') {
                     guard_direction = Direction.north;
                 } else if (guard_cords.y == placement.y and guard_cords.x - 1 == placement.x) {
-                    if (first_touch) {
-                        first_touch_direction = guard_direction;
-                        guard_direction = Direction.north;
-                        first_touch = false;
-                    } else if (guard_direction == first_touch_direction) {
-                        return true;
-                    }
+                    //     check = true;
+                    guard_direction = Direction.north;
                 } else guard_cords.x -= 1;
             },
         }
+        // if (check) {
+        if (all_cords.contains(guard_cords)) {
+            for (all_cords.get(guard_cords).?.items) |dir| {
+                if (dir == guard_direction) return true;
+            }
+            try all_cords.getPtr(guard_cords).?.append(guard_direction);
+        } else {
+            var new_array = ArrayList(Direction).init(allocator);
+            try new_array.append(guard_direction);
+            try all_cords.put(guard_cords, new_array);
+        }
+        // }
     }
     return false;
 }
