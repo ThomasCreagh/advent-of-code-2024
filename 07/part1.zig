@@ -5,7 +5,7 @@ const parseInt = std.fmt.parseInt;
 const info = std.log.info;
 const debug = std.log.debug;
 
-pub const std_options = .{ .log_level = .debug };
+pub const std_options = .{ .log_level = .info };
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -16,7 +16,7 @@ pub fn main() !void {
     }
 
     std.log.info("Sample Answer: {d}", .{try solve("sampleinput.txt", allocator)});
-    // std.log.info("Answer: {d}", .{try solve("input.txt", allocator)});
+    std.log.info("Answer: {d}", .{try solve("input.txt", allocator)});
 }
 
 fn solve(comptime filename: []const u8, allocator: std.mem.Allocator) !usize {
@@ -33,36 +33,20 @@ fn solve(comptime filename: []const u8, allocator: std.mem.Allocator) !usize {
             try array.append(try parseInt(usize, number, 10));
         }
 
-        debug("array len: {d}", .{array.items.len});
         for (0..std.math.pow(usize, 2, array.items.len - 1)) |combo| {
-            var sumation_array = std.ArrayList(usize).init(allocator);
-            defer sumation_array.deinit();
-            var last = array.items[0];
-            var next_bit: usize = 0b1;
+            var total_values: usize = array.items[0];
             for (0..array.items.len - 1) |mul_index| {
                 const bit = @as(usize, 0b1) << @as(u6, @intCast(mul_index));
-                debug("bit {b}, combo {b}, curr_num {d} last {d} bool {}", .{ bit, combo, array.items[mul_index + 1], last, (combo & bit) >> @as(u6, @intCast(mul_index)) == 1 });
-                // if (combo & bit == 1 and next_bit == 1) {
-                //     last *= array.items[mul_index + 1];
+                debug("combo {b} total {d}", .{ combo, total_values });
                 if ((combo & bit) >> @as(u6, @intCast(mul_index)) == 1) {
-                    last *= array.items[mul_index + 1];
-                    // try sumation_array.append(last);
-                    // last = array.items[mul_index + 1];
+                    total_values *= array.items[mul_index + 1];
                 } else {
-                    try sumation_array.append(last);
-                    last = array.items[mul_index + 1];
+                    total_values += array.items[mul_index + 1];
                 }
-                next_bit = bit;
-            }
-            try sumation_array.append(last);
-            debug("sum array: {any}", .{sumation_array.items});
-            var total_values: usize = 0;
-            for (sumation_array.items) |item| {
-                total_values += item;
             }
             debug("TOTAL: {d}", .{total_values});
             if (total_values == answer) {
-                output += 1;
+                output += total_values;
                 break;
             }
         }
